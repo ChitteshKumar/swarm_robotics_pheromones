@@ -1,0 +1,43 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/gctronic/e-puck/protos/E-puck.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation 0.16827802425772778 0.027890536688922312 -0.9853449266704118 2.8177981739971556
+  position 0.5552950351534831 0.39896107238307676 0.228480764533791
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+}
+E-puck {
+  translation 0 0.1 0
+  rotation 0.8318672063870135 0.5549747293239907 2.737935745567331e-05 3.0769992606696404e-09
+  controller "food_detection_avoid_obstacles"
+}
+E-puck {
+  name "e-puck(1)"
+  controller "food_detection_avoid_obstacles"
+}
+Solid {
+  translation 0 0.3 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+  ]
+}
