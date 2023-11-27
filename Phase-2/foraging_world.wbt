@@ -9,8 +9,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.3363538944243419 0.44104012890108635 -0.8320755148449519 1.4837520116874618
-  position -0.21138099801292096 0.9497725151979449 0.9471414941999658
+  orientation 0.32502536859127446 0.6876482211031654 -0.6492291073155596 1.2585759018567555
+  position -0.46525223633492446 0.7149588885742273 1.075365394838677
 }
 TexturedBackground {
 }
@@ -22,13 +22,10 @@ RectangleArena {
   }
 }
 E-puck {
-  hidden position_0_0 3.0581688575886486e-08
-  hidden position_0_1 3.058169204239447e-08
-  hidden rotation_1 0 1 0 2.9802322387695313e-08
-  hidden rotation_2 0 1 0 2.9802322387695313e-08
   translation 1.9705056291968407e-16 0.10000000001779287 -6.392402701446698e-05
   rotation 0.9999977569531334 0.0021180386982749266 8.800709008493001e-07 9.581808006674918e-08
-  controller "food_detection_avoid_obstacles"
+  name "e1"
+  controller "robot_foraging"
 }
 Solid {
   translation 0 -0.3 0.05
@@ -44,4 +41,13 @@ Solid {
       }
     }
   ]
+}
+E-puck {
+  name "e2"
+  controller "robot_foraging"
+}
+E-puck {
+  translation 0 -0.1 0
+  name "e3"
+  controller "robot_foraging"
 }
