@@ -1,0 +1,57 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/gctronic/e-puck/protos/E-puck.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/Parquetry.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation 0.30709907873892667 0.4176390171553549 -0.8551419807185306 1.4203911744763742
+  position -0.6001043755973198 1.7321139999670523 1.2697169077865598
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 2 2
+  floorAppearance Parquetry {
+    type "light strip"
+  }
+}
+E-puck {
+  translation -0.656908 -0.0240011 -0.000103086
+  rotation 0.0002015289873816967 -0.0002908809817871141 0.9999999373871588 1.73539
+  name "e1"
+  controller "robot_foraging"
+}
+Solid {
+  translation 0 -0.59 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+  ]
+}
+E-puck {
+  translation 0.384064 0.211952 0.16
+  rotation 0.00026770611930187647 0.0008031726704291242 -0.9999996416234833 0.6434527722520732
+  name "e2"
+  controller "robot_foraging"
+}
+E-puck {
+  translation -0.263474 0.763837 -8.94652e-05
+  rotation -9.724304569523941e-05 1.5806422161211415e-05 0.9999999951469736 2.8193331894727196
+  name "e3"
+  controller "robot_foraging"
+}
