@@ -229,7 +229,7 @@ if __name__ == "__main__":
             return message
         return None 
     #--------------------------------- PHEROMONE---Algorithm --------------------------------- 
-    def get_robot_position(name):
+    def get_robot_position():
         # robot_node = supervisor.getFromDef(name)
         robot_node = supervisor.getSelf()
         position = robot_node.getPosition()
@@ -241,26 +241,33 @@ if __name__ == "__main__":
     #define pheromone properties
     intensity = 1.0
     evaporation_rate = 0.1
-    sensing_range = 0.5
+    # sensing_range = 0.5
 
     #STEP-1
     def deposit_pheromone(robot_pos):
         #deposit pheromones 
-        pheromone_grid[int(robot_pos[0])][int(robot_pos[1])] += intensity
+        pheromone_grid[int(robot_pos[0]*10)][int(robot_pos[1]*10)] += intensity
         print(f"deposited at: {robot_pos[0]}, {robot_pos[1]}" )
-        print("GRID: ", pheromone_grid)
+        print("GRID (before sensing): ", pheromone_grid)
 
     #STEP-2
-    def sense_pheromone(robot_pos, sensing_range):
-        x,y = int(robot_pos[0]), int(robot_pos[1])
-        sensed_pheromone = pheromone_grid[x][y]
+    def sense_pheromone(robot_pos):
+        sensed_pheromone = [[0.0]*10 for _ in range(10)]
+        # copying the grid in a variable 
+        sensed_pheromone[int(robot_pos[0]*10)][int(robot_pos[1]*10)]  = pheromone_grid[int(robot_pos[0]*10)][int(robot_pos[1]*10)] 
         
-        # Optionally, consider neighboring cells within the sensing range
-        for i in range(max(0, x - sensing_range), min(10, x + sensing_range + 1)):
-            for j in range(max(0, y - sensing_range), min(10, y + sensing_range + 1)):
-                sensed_pheromone += pheromone_grid[i][j]
+        #calculate the pheromone concentration at real time positon and neighbouring cells (up, down left, right)
+        for i,j in [(1,0), (0,1), (0,-1), (-1,0)]:
+            new_pos_x = int(robot_pos[0]*10) + i 
+            new_pos_y = int(robot_pos[1]*10) + j
+            if 0 <= new_pos_x < 10 and 0<= new_pos_y < 10:
+                sensed_pheromone[new_pos_x][new_pos_y] = pheromone_grid[new_pos_x][new_pos_y]
         
-        adjust_robot_behavior(sensed_pheromone)
+        # adjust_robot_behavior(sensed_pheromone)
+        print("GRID (after sensing): ", sensed_pheromone)
+        for sense in sensed_pheromone:
+            print("CELLS: ", sense)
+            
 
         return sensed_pheromone
     """
@@ -279,26 +286,54 @@ if __name__ == "__main__":
         if sensed_pheromone > threshold:
             # Perform some behavior when pheromones are detected
             print("Pheromones detected, adjusting behavior...")
-            # For example, change the robot's speed or direction
-            left_motor.setVelocity(MAX_SPEED * 0.8)
-            right_motor.setVelocity(MAX_SPEED * 0.8)
+            
+            #find the postion of the higher value of pheromone 
+            max_pheromone_pos = position_max_pheromone(robot_pos, sensed_pheromone)
+
+            if max_pheromone_pos == 'up':
+                turn_left()
+                go_forward()
+            elif max_pheromone_pos == 'down':
+                turn_right()
+                go_forward()
+            elif  max_pheromone_pos == 'left':
+                turn_left()
+                go_forward()
+            elif max_pheromone_pos == 'right':
+                turn_right()
+                go_forward()
+
         else:
             # Perform default behavior when no pheromones are detected
             print("No pheromones detected, continuing default behavior...")
             # For example, continue with Braitenberg algorithm
             run_braitenberg()
+
+    def position_max_pheromone(robot_pos):
+        #get the direction of high valued pheromone
+        x = int(robot_pos[0]*10)
+        y = int(robot_pos[1]*10)
+        neighbours = {
+            'up' : pheromone_grid[x - 1][y],
+            'down' : pheromone_grid[x + 1][y],
+            'left' : pheromone_grid[x][y - 1],
+            'right' : pheromone_grid[x][y+1]
+        }
+        max_direction = max(neighbours, key=neighbours.get)
+        return max_direction
     
     #STEP-4
-    def evaporate_pheromone():
-        #update the pheromone on the board when no object is detected 
+    def evaporate_pheromone(elapsed_time):
+        #decay factor 
+        decay_factor = math.exp(-evaporation_rate * elapsed_time)
+
         for i in range(10):
             for j in range(10):
-                pheromone_grid[i][j] *= (1-evaporation_rate)
-    
-    # def update_pheromone():
-        # pass
+                pheromone_grid[i][j] *= decay_factor
 
-        
+    #track time for evaporation
+    previous_time_evp = timestep
+    evaporation_interval = 2.0 # in seconds 
     #---------------------------------- End of Ph.Algorithm --------------------------------- 
     
     counter = 0
@@ -315,7 +350,7 @@ if __name__ == "__main__":
             if supervisor.getName() == robot_name:
 
                 #position of the robot
-                robot_pos = get_robot_position(robot_name)
+                robot_pos = get_robot_position()
                 print(f"Current positon of {robot_name}: {robot_pos}")
 
                 if cliff_detected():
@@ -326,7 +361,7 @@ if __name__ == "__main__":
                     #deposition of pheromone 
                     deposition = deposit_pheromone(robot_pos)
                     #sense the pheromone 
-                    # sensing = sense_pheromone(robot_pos, sensing_range=1.0)
+                    sensing = sense_pheromone(robot_pos)
                     
                     if get_camera_input():
                         # the code below is the instructions for e1 robot to stop 
@@ -340,7 +375,16 @@ if __name__ == "__main__":
                             # robot stops but keep the simulation running,
                             left_motor.setVelocity(0)
                             right_motor.setVelocity(0)
-                            # sys.exit(0)                                 
+                            # sys.exit(0)      
+        
+        current_time = timestep
+        elapsed_time = current_time - previous_time_evp 
+
+        if elapsed_time > evaporation_interval:
+            #evaporation of the pheromone and update the previous_time_evp  time 
+            evaporate_pheromone(elapsed_time)
+            previous_time_evp = current_time
+
 
         set_actuators()
         step()
