@@ -215,7 +215,7 @@ if __name__ == "__main__":
         is_red = np.any(mask)
         number_pixels = np.sum(mask)
         # Print some debug information
-        print("Red detection:", is_red)
+        # print("Red detection:", is_red)
         print("Number of red pixels:", number_pixels)
         return is_red
   
@@ -230,13 +230,12 @@ if __name__ == "__main__":
         return None 
     #--------------------------------- PHEROMONE---Algorithm --------------------------------- 
     def get_robot_position():
-        # robot_node = supervisor.getFromDef(name)
         robot_node = supervisor.getSelf()
         position = robot_node.getPosition()
-        # return x, y
         return position
     
-    pheromone_grid = [[0.0]*10 for _ in range(10)]
+    # pheromone_grid = [[0.0]*10 for _ in range(10)]
+    pheromone_grids = {}
 
     #define pheromone properties
     intensity = 1.0
@@ -244,31 +243,55 @@ if __name__ == "__main__":
     # sensing_range = 0.5
 
     #STEP-1
-    def deposit_pheromone(robot_pos):
+    def deposit_pheromone(robot_name, robot_pos):
+        if robot_name not in pheromone_grids:
+            pheromone_grids[robot_name] = [[0.0]*10 for _ in range(10)]
+
         #deposit pheromones 
-        pheromone_grid[int(robot_pos[0]*10)][int(robot_pos[1]*10)] += intensity
+        pheromone_grids[robot_name][int(robot_pos[0]*10)][int(robot_pos[1]*10)] += intensity
         print(f"deposited at: {robot_pos[0]}, {robot_pos[1]}" )
-        print("GRID (before sensing): ", pheromone_grid)
+        print("GRID (before sensing): ", pheromone_grids[robot_name])
 
     #STEP-2
-    def sense_pheromone(robot_pos):
-        sensed_pheromone = [[0.0]*10 for _ in range(10)]
-        # copying the grid in a variable 
-        sensed_pheromone[int(robot_pos[0]*10)][int(robot_pos[1]*10)]  = pheromone_grid[int(robot_pos[0]*10)][int(robot_pos[1]*10)] 
+    def sense_pheromone(robot_name, robot_pos):
+        #esuring each robot's grid is added to the dictionary 
+        if robot_name not in pheromone_grids:
+            pheromone_grids[robot_name] = [[0.0]*10 for _ in range(10)]
+
+        #pheromone at current position 
+        current_sensed_pheromone = pheromone_grids[robot_name][int(robot_pos[0]*10)][int(robot_pos[1]*10)] 
+
+        # neighbors = [
+        #     (self.x, self.y + 1),  # Up
+        #     (self.x, self.y - 1),  # Down
+        #     (self.x - 1, self.y),  # Left
+        #     (self.x + 1, self.y),  # Right
+        # ]
+
+        # pheromones_around = {}
+
+        # for neighbor_x, neighbor_y in neighbors:
         
-        #calculate the pheromone concentration at real time positon and neighbouring cells (up, down left, right)
-        for i,j in [(1,0), (0,1), (0,-1), (-1,0)]:
+        neighbour_sensed_pheromone = []
+        #calculate the pheromone concentration at neighbouring cells (up, down left, right -> the list is in this order)
+        for i,j in [(-1,0), (1,0), (0,-1), (0,1)]:
             new_pos_x = int(robot_pos[0]*10) + i 
             new_pos_y = int(robot_pos[1]*10) + j
             if 0 <= new_pos_x < 10 and 0<= new_pos_y < 10:
-                sensed_pheromone[new_pos_x][new_pos_y] = pheromone_grid[new_pos_x][new_pos_y]
-        
-        # adjust_robot_behavior(sensed_pheromone)
-        print("GRID (after sensing): ", sensed_pheromone)
-        for sense in sensed_pheromone:
-            print("CELLS: ", sense)
-            
+                # neighbour_sensed_pheromone += pheromone_grids[robot_name][new_pos_x][new_pos_y]
+                neighbour_sensed_pheromone.append(pheromone_grids[robot_name][new_pos_x][new_pos_y])
 
+        pheromone_grids[robot_name][int(robot_pos[0]*10)][int(robot_pos[1]*10)] += 1.0
+
+        sensed_pheromone = [current_sensed_pheromone] + neighbour_sensed_pheromone
+
+
+        print(f"GRID (after sensing) of {robot_name}: ", pheromone_grids[robot_name])        
+        # print(f"Current pheromone of {robot_name} : ", current_sensed_pheromone)
+        # print("neighbour : ", neighbour_sensed_pheromone)
+        print("combined (current + neighbour): ", sensed_pheromone)
+        
+        adjust_robot_behavior(sensed_pheromone, robot_name) #not working 
         return sensed_pheromone
     """
     # Sense pheromones (simplified example)
@@ -279,57 +302,63 @@ if __name__ == "__main__":
         adjust_robot_behavior(sensed_pheromones)  # Implement this function
     """
     #STEP-3
-    def adjust_robot_behavior(sensed_pheromone):
+    def adjust_robot_behavior(sensed_pheromone, robot_name):
         # Threshold to determine whether pheromones are present
         threshold = 0.5
-
-        if sensed_pheromone > threshold:
+        if max(sensed_pheromone) > threshold:
             # Perform some behavior when pheromones are detected
-            print("Pheromones detected, adjusting behavior...")
+            print(f"Pheromones detected for {robot_name}, adjusting behavior...")
             
             #find the postion of the higher value of pheromone 
-            max_pheromone_pos = position_max_pheromone(robot_pos, sensed_pheromone)
+            max_pheromone = sensed_pheromone.index(max(sensed_pheromone))
+            # print("MAX PHEROMONE DETECTED at index: ", max_pheromone)
+        
+            if max_pheromone == 0: #pheromone is highest in its current position 
+                print("this is highest, no change needed")
+                run_braitenberg()
+            elif max_pheromone == 1: #pheromone is highest in upper position 
+                print("this is highest, in upper direction")
+                left_motor.setVelocity(0)
+                right_motor.setVelocity(0)
+            elif  max_pheromone == 2: #pheromone is highest in down position 
+                print("this is highest, in opposite (down) direction")
+                left_motor.setVelocity(0)
+                right_motor.setVelocity(0)
+            elif max_pheromone == 3: #pheromone is highest in left position 
+                print("this is highest, in left direction")
+                left_motor.setVelocity(0)
+                right_motor.setVelocity(0)
+            elif max_pheromone ==4: #pheromone is highest in right position 
+                print("this is highest, in right direction")
+                left_motor.setVelocity(0)
+                right_motor.setVelocity(0)
+     
+            
 
-            if max_pheromone_pos == 'up':
-                turn_left()
-                go_forward()
-            elif max_pheromone_pos == 'down':
-                turn_right()
-                go_forward()
-            elif  max_pheromone_pos == 'left':
-                turn_left()
-                go_forward()
-            elif max_pheromone_pos == 'right':
-                turn_right()
-                go_forward()
+            # else:
+            #     # Perform default behavior when no pheromones are detected
+            #     print(f"No pheromones detected for {robot_name}, continuing default behavior...")
+            #     # For example, continue with Braitenberg algorithm
+            #     run_braitenberg()
 
-        else:
-            # Perform default behavior when no pheromones are detected
-            print("No pheromones detected, continuing default behavior...")
-            # For example, continue with Braitenberg algorithm
-            run_braitenberg()
-
-    def position_max_pheromone(robot_pos):
-        #get the direction of high valued pheromone
-        x = int(robot_pos[0]*10)
-        y = int(robot_pos[1]*10)
-        neighbours = {
-            'up' : pheromone_grid[x - 1][y],
-            'down' : pheromone_grid[x + 1][y],
-            'left' : pheromone_grid[x][y - 1],
-            'right' : pheromone_grid[x][y+1]
-        }
-        max_direction = max(neighbours, key=neighbours.get)
-        return max_direction
+    # def position_max_pheromone(robot_pos, sensed_pheromone):
+    #     #get the direction of high valued pheromone
+    #     x = int(robot_pos[0]*10)
+    #     y = int(robot_pos[1]*10)
+    #     neighbours = {
+    #         'up' : sensed_pheromone[0],
+    #         'down' : sensed_pheromone[1],
+    #         'left' : sensed_pheromone[2],
+    #         'right' : sensed_pheromone[3]
+    #     }
+    #     max_direction = max(neighbours, key=neighbours.get)
+    #     return max_direction
     
     #STEP-4
-    def evaporate_pheromone(elapsed_time):
+    def evaporate_pheromone(robot_name, elapsed_time, robot_pos):
         #decay factor 
         decay_factor = math.exp(-evaporation_rate * elapsed_time)
-
-        for i in range(10):
-            for j in range(10):
-                pheromone_grid[i][j] *= decay_factor
+        pheromone_grids[robot_name][int(robot_pos[0])*10][int(robot_pos[1])*10] *= decay_factor
 
     #track time for evaporation
     previous_time_evp = timestep
@@ -358,10 +387,6 @@ if __name__ == "__main__":
                     turn_left()
                 else:
                     run_braitenberg()
-                    #deposition of pheromone 
-                    deposition = deposit_pheromone(robot_pos)
-                    #sense the pheromone 
-                    sensing = sense_pheromone(robot_pos)
                     
                     if get_camera_input():
                         # the code below is the instructions for e1 robot to stop 
@@ -376,14 +401,21 @@ if __name__ == "__main__":
                             left_motor.setVelocity(0)
                             right_motor.setVelocity(0)
                             # sys.exit(0)      
-        
-        current_time = timestep
-        elapsed_time = current_time - previous_time_evp 
+                            continue
 
-        if elapsed_time > evaporation_interval:
-            #evaporation of the pheromone and update the previous_time_evp  time 
-            evaporate_pheromone(elapsed_time)
-            previous_time_evp = current_time
+                    #deposition of pheromone 
+                    deposition = deposit_pheromone(robot_name, robot_pos)
+                    #sense the pheromone 
+                    sensing = sense_pheromone(robot_name, robot_pos)         
+                    #the two functions are after red object detection since we do not want to deposit and sense extra pheromones which are not useful
+        
+        # current_time = timestep
+        # elapsed_time = current_time - previous_time_evp 
+
+        # if elapsed_time > evaporation_interval:
+        #     #evaporation of the pheromone and update the previous_time_evp  time 
+        #     evaporate_pheromone(elapsed_time, robot_name)
+        #     previous_time_evp = current_time
 
 
         set_actuators()
