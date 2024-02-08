@@ -58,7 +58,6 @@ if __name__ == "__main__":
     receiver = supervisor.getDevice("receiver")
     receiver.enable(timestep)
     
-
     #Initialising the motors 
     left_motor = supervisor.getDevice("left wheel motor")
     right_motor = supervisor.getDevice("right wheel motor")
@@ -186,13 +185,13 @@ if __name__ == "__main__":
         passive_wait(0.2)
     
     def turn_left():
-        left_motor.setVelocity(-MAX_SPEED)
+        left_motor.setVelocity(MAX_SPEED * 0.5) # slower velocity for turning 
         right_motor.setVelocity(MAX_SPEED)
         passive_wait(0.2)
         
     def turn_right():
         left_motor.setVelocity(MAX_SPEED)
-        right_motor.setVelocity(-MAX_SPEED)
+        right_motor.setVelocity(MAX_SPEED * 0.5 )
         passive_wait(0.2)
    
     def get_camera_input():
@@ -257,62 +256,66 @@ if __name__ == "__main__":
         #esuring each robot's grid is added to the dictionary 
         if robot_name not in pheromone_grids:
             pheromone_grids[robot_name] = [[0.0]*10 for _ in range(10)]
+        
+        #current x and y coordinates
+        x = int(robot_pos[0]*10)
+        y = int(robot_pos[1]*10)
 
         #pheromone at current position 
-        current_sensed_pheromone = pheromone_grids[robot_name][int(robot_pos[0]*10)][int(robot_pos[1]*10)] 
-
-        # neighbors = [
-        #     (self.x, self.y + 1),  # Up
-        #     (self.x, self.y - 1),  # Down
-        #     (self.x - 1, self.y),  # Left
-        #     (self.x + 1, self.y),  # Right
-        # ]
-
-        # pheromones_around = {}
-
-        # for neighbor_x, neighbor_y in neighbors:
+        current_sensed_pheromone = pheromone_grids[robot_name][x][y] 
         
-        neighbour_sensed_pheromone = []
         #calculate the pheromone concentration at neighbouring cells (up, down left, right -> the list is in this order)
-        for i,j in [(-1,0), (1,0), (0,-1), (0,1)]:
-            new_pos_x = int(robot_pos[0]*10) + i 
-            new_pos_y = int(robot_pos[1]*10) + j
-            if 0 <= new_pos_x < 10 and 0<= new_pos_y < 10:
-                # neighbour_sensed_pheromone += pheromone_grids[robot_name][new_pos_x][new_pos_y]
-                neighbour_sensed_pheromone.append(pheromone_grids[robot_name][new_pos_x][new_pos_y])
+        neighbour_sensed_pheromone = []
 
+        # absolue value of the coordinates of the robot for neighbour cells 
+        x,y = abs(int(robot_pos[0]*10)), abs(int(robot_pos[1]*10))
+
+        neighbors = [
+            (x -1 , y),  # Up
+            (x +1 , y),  # Down
+            (x, y -1 ),  # Left
+            (x, y+ 1),  # Right
+        ]
+        # fixed the problem of not including -ve values and 10
+        valid_neighbours = [(neighbor_x, neighbor_y) for neighbor_x, neighbor_y in neighbors if 0 <= neighbor_x < 10 and 0 <= neighbor_y < 10]
+
+        for neighbor_x, neighbor_y in valid_neighbours:
+                print("X : ", neighbor_x, "Y : ", neighbor_y)
+                neighbour_sensed_pheromone.append(pheromone_grids[robot_name][neighbor_x][neighbor_y])
+
+        
+        # neighbour_sensed_pheromone = []
+        # #calculate the pheromone concentration at neighbouring cells (up, down left, right -> the list is in this order)
+        # for i,j in [(-1,0), (1,0), (0,-1), (0,1)]:
+        #     new_pos_x = int(robot_pos[0]*10) + i 
+        #     new_pos_y = int(robot_pos[1]*10) + j
+        #     if 0 <= new_pos_x < 10 and 0<= new_pos_y < 10:
+        #         # neighbour_sensed_pheromone += pheromone_grids[robot_name][new_pos_x][new_pos_y]
+        #         neighbour_sensed_pheromone.append(pheromone_grids[robot_name][new_pos_x][new_pos_y])
+
+        # on hold that whether to increase the intensity where the robot is going after the detection
         pheromone_grids[robot_name][int(robot_pos[0]*10)][int(robot_pos[1]*10)] += 1.0
 
         sensed_pheromone = [current_sensed_pheromone] + neighbour_sensed_pheromone
 
-
         print(f"GRID (after sensing) of {robot_name}: ", pheromone_grids[robot_name])        
-        # print(f"Current pheromone of {robot_name} : ", current_sensed_pheromone)
+        print(f"Current pheromone of {robot_name} : ", current_sensed_pheromone)
         # print("neighbour : ", neighbour_sensed_pheromone)
         print("combined (current + neighbour): ", sensed_pheromone)
         
-        adjust_robot_behavior(sensed_pheromone, robot_name) #not working 
+        adjust_robot_behavior(sensed_pheromone, robot_name) #not working  
         return sensed_pheromone
-    """
-    # Sense pheromones (simplified example)
-    # Modify this part based on your robot's behavior
-    # For example, check for pheromones in the sensing range
-    sensed_pheromones = sense_pheromones(robot_position)
-    if sensed_pheromones:
-        adjust_robot_behavior(sensed_pheromones)  # Implement this function
-    """
+ 
     #STEP-3
     def adjust_robot_behavior(sensed_pheromone, robot_name):
-        # Threshold to determine whether pheromones are present
-        threshold = 0.5
-        if max(sensed_pheromone) > threshold:
+        #find the postion of the higher value of pheromone 
+        max_pheromone = sensed_pheromone.index(max(sensed_pheromone))
+        # print("MAX PHEROMONE DETECTED at index: ", max_pheromone)
+
+        if max(sensed_pheromone) > 0.5:  # Threshold to determine whether pheromones are present ; threshold = 0.5
             # Perform some behavior when pheromones are detected
-            print(f"Pheromones detected for {robot_name}, adjusting behavior...")
-            
-            #find the postion of the higher value of pheromone 
-            max_pheromone = sensed_pheromone.index(max(sensed_pheromone))
-            # print("MAX PHEROMONE DETECTED at index: ", max_pheromone)
-        
+            print(f"Pheromones detected for {robot_name} with highest being {max(sensed_pheromone)}, adjusting behavior...")
+
             if max_pheromone == 0: #pheromone is highest in its current position 
                 print("this is highest, no change needed")
                 run_braitenberg()
@@ -320,26 +323,27 @@ if __name__ == "__main__":
                 print("this is highest, in upper direction")
                 left_motor.setVelocity(0)
                 right_motor.setVelocity(0)
+                go_forward()
             elif  max_pheromone == 2: #pheromone is highest in down position 
                 print("this is highest, in opposite (down) direction")
                 left_motor.setVelocity(0)
                 right_motor.setVelocity(0)
+                go_backwards()
             elif max_pheromone == 3: #pheromone is highest in left position 
                 print("this is highest, in left direction")
                 left_motor.setVelocity(0)
                 right_motor.setVelocity(0)
+                turn_left()
             elif max_pheromone ==4: #pheromone is highest in right position 
                 print("this is highest, in right direction")
                 left_motor.setVelocity(0)
                 right_motor.setVelocity(0)
-     
-            
+                turn_right()
 
-            # else:
-            #     # Perform default behavior when no pheromones are detected
-            #     print(f"No pheromones detected for {robot_name}, continuing default behavior...")
-            #     # For example, continue with Braitenberg algorithm
-            #     run_braitenberg()
+        else:
+            # Perform default behavior when no pheromones are detected
+            print(f"No pheromones detected for {robot_name}, continuing default behavior...")
+            run_braitenberg()
 
     # def position_max_pheromone(robot_pos, sensed_pheromone):
     #     #get the direction of high valued pheromone
@@ -416,7 +420,6 @@ if __name__ == "__main__":
         #     #evaporation of the pheromone and update the previous_time_evp  time 
         #     evaporate_pheromone(elapsed_time, robot_name)
         #     previous_time_evp = current_time
-
 
         set_actuators()
         step()
