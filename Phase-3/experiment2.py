@@ -9,74 +9,109 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 
 class InitializeRobot():
-    def  __init__(self):
+    def  __init__(self, name=None, supervisor=None):
         # create the Robot instance.
         # robot = Robot()
-        self.supervisor = Supervisor()
-
+        self.supervisor = supervisor
+        self.name = name
         #time step of the world
         self.timestep = int(self.supervisor.getBasicTimeStep())
-        
-        #Distance Sensor in the robot
-        DISTANCE_SENSORS_NUMBER = 8
-        self.distance_sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
-        self.distance_sensors =  [None] * DISTANCE_SENSORS_NUMBER
-        self.distance_sensors_values = [0.0] * DISTANCE_SENSORS_NUMBER  # Initialize distance_sensors_values 
-        for i, name in enumerate(self.distance_sensor_names):
-            self.distance_sensors[i] = self.supervisor.getDevice(name)
-            self.distance_sensors[i].enable(self.timestep)
 
-        #Ground Sensor in the device
-        GROUND_SENSORS_NUMBER = 3
-        ground_sensor_names = ["gs0", "gs1", "gs2"]
-        # Silently initialize the ground sensors if they exist
-        self.ground_sensors = [None] * GROUND_SENSORS_NUMBER
-        self.ground_sensors_values = [0.0] * GROUND_SENSORS_NUMBER
+        self.device_map = {
+            'e1': {
+                'distance_sensor_names': ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"], 
+                'ground_sensor_names': ["gs0", "gs1", "gs2"],
+                'led_names' : ["led0", "led1", "led2", "led3", "led4", "led5", "led6", "led7", "led8", "led9"],
+                "camera" : "camera",
+                "emitter1" : "emitter",
+                "receiver1" : "receiver",
+                "left_motor" : "left wheel motor",
+                "right_motor" : "right wheel motor"
+            },
+            'e2': {
+                'distance_sensor_names': ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"], 
+                'ground_sensor_names': ["gs0", "gs1", "gs2"],
+                'led_names' : ["led0", "led1", "led2", "led3", "led4", "led5", "led6", "led7", "led8", "led9"],
+                "camera" : "camera",
+                "emitter2" : "emitter",
+                "receiver2" : "receiver",
+                "left_motor" : "left wheel motor",
+                "right_motor" : "right wheel motor"
+            }
+        } 
 
-        devices_number = self.supervisor.getNumberOfDevices()
-        for i in range(devices_number):
-            dtag = self.supervisor.getDeviceByIndex(i)
-            dname = dtag.getName()
-            dtype = dtag.getNodeType()
-            if dtype == Node.DISTANCE_SENSOR and len(dname) == 3 and dname[0] == 'g' and dname[1] == 's':
-                id = int(dname[2])
-                if 0 <= id < GROUND_SENSORS_NUMBER:
-                    self.ground_sensors[id] = self.supervisor.getDevice(ground_sensor_names[id])
-                    self.ground_sensors[id].enable(self.timestep)
-        
-        #Led in the device
-        self.LEDS_NUMBER = 10
-        self.led_names = ["led0", "led1", "led2", "led3", "led4", "led5", "led6", "led7", "led8", "led9"]
-        self.leds = [None] * self.LEDS_NUMBER
-        self.leds_values = [False] * self.LEDS_NUMBER  # Initialize leds_values
-        for i, name in enumerate(self.led_names):
-            self.leds[i] = self.supervisor.getDevice(name)
-        
-        #sensor for camera
-        self.camera = self.supervisor.getDevice("camera")
-        self.camera.enable(self.timestep)
-        
-        # Define emitter and receiver
-        self.emitter = self.supervisor.getDevice("emitter")
-        receiver = self.supervisor.getDevice("receiver")
-        receiver.enable(self.timestep)
-        
-        #Initialising the motors 
-        self.left_motor = self.supervisor.getDevice("left wheel motor")
-        self.right_motor = self.supervisor.getDevice("right wheel motor")
-        self.left_motor.setPosition(float('inf'))
-        self.right_motor.setPosition(float('inf'))
-        self.left_motor.setVelocity(0.0)
-        self.right_motor.setVelocity(0.0)
-        
-        #About the robot
-        # MAX_SPEED = 6.28 
-        self.MAX_SPEED = 3.14
-        self.speeds = [0.0, 0.0]
-        self.offsets = [0.5 * self.MAX_SPEED, 0.5 * self.MAX_SPEED]
-        self.coefficients = [[0.942, -0.22], [0.63, -0.1], [0.5, -0.06],  [-0.06, -0.06], [-0.06, -0.06], [-0.06, 0.5], [-0.19, 0.63], [-0.13, 0.942]]
-        self.counter = 0
+        self.initializeDevices()
     
+    def initializeDevices(self):
+            #Distance Sensor in the robot
+            self.distance_sensors =  [None] * 8
+            self.distance_sensors_values = [0.0] * 8  # Initialize distance_sensors_values 
+
+            for i, name in enumerate(self.device_map[self.name]['distance_sensor_names']):
+                self.distance_sensors[i] = self.supervisor.getDevice(name)
+                self.distance_sensors[i].enable(self.timestep)
+
+            #Ground Sensor in the device
+            GROUND_SENSORS_NUMBER = 3
+            ground_sensor_names = ["gs0", "gs1", "gs2"]
+            # Silently initialize the ground sensors if they exist
+            self.ground_sensors = [None] * GROUND_SENSORS_NUMBER
+            self.ground_sensors_values = [0.0] * GROUND_SENSORS_NUMBER
+
+            devices_number = self.supervisor.getNumberOfDevices()
+            for i in range(devices_number):
+                dtag = self.supervisor.getDeviceByIndex(i)
+                dname = dtag.getName()
+                dtype = dtag.getNodeType()
+                if dtype == Node.DISTANCE_SENSOR and len(dname) == 3 and dname[0] == 'g' and dname[1] == 's':
+                    id = int(dname[2])
+                    if 0 <= id < GROUND_SENSORS_NUMBER:
+                        # for i, name in enumerate(self.device_map[self.name]['ground_sensor_names']):
+                        #     self.ground_sensors[i] = self.supervisor.getDevice(name)
+                        #     self.ground_sensors[i].enable(self.timestep)
+                        self.ground_sensors[id] = self.supervisor.getDevice(ground_sensor_names[id])
+                        self.ground_sensors[id].enable(self.timestep)
+
+            # print(f"GORUND SESNROS {self.name}", self.ground_sensors)
+            
+            #Led in the device
+            self.leds = [None] * 10
+            self.leds_values = [False] * 10  # Initialize leds_values
+            for i, name in enumerate(self.device_map[self.name]['led_names']):
+                self.leds[i] = self.supervisor.getDevice(name)
+            
+            #sensor for camera
+            # self.camera_e1 = self.supervisor.getDevice(self.device_map[self.name]["camera"])
+            # self.camera_e1.enable(self.timestep)
+
+            # self.camera_e2 = self.supervisor.getDevice(self.device_map[self.name]["camera"])
+            # self.camera_e2.enable(self.timestep)
+
+            self.camera = self.supervisor.getDevice(self.device_map[self.name]["camera"])
+            self.camera.enable(self.timestep)
+
+    
+            # Define emitter and receiver
+            # self.emitter = self.supervisor.getDevice(self.device_map[self.name]["emitter"])
+            # receiver = self.supervisor.getDevice(self.device_map[self.name]["receiver"])
+            # receiver.enable(self.timestep)
+            
+            #Initialising the motors 
+            self.left_motor = self.supervisor.getDevice(self.device_map[self.name]["left_motor"])
+            self.right_motor = self.supervisor.getDevice(self.device_map[self.name]["right_motor"])
+            self.left_motor.setPosition(float('inf'))
+            self.right_motor.setPosition(float('inf'))
+            self.left_motor.setVelocity(0.0)
+            self.right_motor.setVelocity(0.0)
+            
+            #About the robot
+            # MAX_SPEED = 6.28 
+            self.MAX_SPEED = 3.14
+            self.speeds = [0.0, 0.0]
+            self.offsets = [0.5 * self.MAX_SPEED, 0.5 * self.MAX_SPEED]
+            self.coefficients = [[0.942, -0.22], [0.63, -0.1], [0.5, -0.06],  [-0.06, -0.06], [-0.06, -0.06], [-0.06, 0.5], [-0.19, 0.63], [-0.13, 0.942]]
+            self.counter = 0
+        
     
     def step(self):
         if self.supervisor.step(self.timestep) == -1:
@@ -91,7 +126,7 @@ class InitializeRobot():
     def reset_actuator_values(self):
         for i in range(2):
             self.speeds[i] = 0.0
-        for i in range(self.LEDS_NUMBER):
+        for i in range(10):
             # leds[i].setValue(False)
             self.leds[i].set(0)
     
@@ -118,7 +153,7 @@ class InitializeRobot():
     def blink_leds(self):
         # global counter
         self.counter += 1
-        self.leds_values[(self.counter // 10) % self.LEDS_NUMBER] = True
+        self.leds_values[(self.counter // 10) % 10] = True
     
     def go_forward(self):
         self.passive_wait(0.2)
@@ -143,36 +178,84 @@ class InitializeRobot():
         self.left_motor.setVelocity(self.MAX_SPEED)
         self.right_motor.setVelocity(self.MAX_SPEED * 0.5 )
 
+    # def get_camera_input(self):
+    #     global number_pixels, number_brown_pixels
+    #     # Define the range of red color in HSV
+    #     lower_red = np.array([0, 150, 150])
+    #     upper_red = np.array([10, 255, 255])
+
+    #     lower_brown = np.array([10, 100, 20])
+    #     upper_brown = np.array([30, 255, 200])
+
+    #     # For e1 robot
+    #     image_e1 = self.camera_e1.getImage()
+    #     width_e1, height_e1 = self.camera_e1.getWidth(), self.camera_e1.getHeight()
+    #     frame_e1 = np.frombuffer(image_e1, dtype=np.uint8).reshape((height_e1, width_e1, 4))
+
+    #     hsv = cv2.cvtColor(frame_e1, cv2.COLOR_BGR2HSV)
+    #     mask = cv2.inRange(hsv, lower_red, upper_red)
+    #     is_red = np.any(mask)
+    #     number_pixels = np.sum(mask)
+    #     print("Number of red pixels by robot e1:", number_pixels)
+
+    #     #For e2 robot
+    #     image_e2 = self.camera_e2.getImage()
+    #     width_e2, height_e2 = self.camera_e2.getWidth(), self.camera_e2.getHeight()
+    #     frame_e2 = np.frombuffer(image_e2, dtype=np.uint8).reshape((height_e2, width_e2, 4))
+
+    #     hsv = cv2.cvtColor(frame_e2, cv2.COLOR_BGR2HSV)
+    #     mask = cv2.inRange(hsv, lower_red, upper_red)
+    #     is_red = np.any(mask)
+    #     number_pixels = np.sum(mask)
+    #     print("Number of red pixels by robot e2:", number_pixels)
+
+    #     #detecting brown
+    #     brown_mask = cv2.inRange(hsv, lower_brown, upper_brown)
+    #     is_brown = np.any(brown_mask)
+    #     number_brown_pixels = np.sum(brown_mask)
+    #     print("Number of brown pixels:", number_brown_pixels)
+
+    #     return is_red, is_brown
+
     def get_camera_input(self):
-        global number_pixels
+        global number_pixels, number_brown_pixels
         image = self.camera.getImage()
         # Assuming the camera resolution is 128x128 pixels
         width, height = self.camera.getWidth(), self.camera.getHeight()
         frame = np.frombuffer(image, dtype=np.uint8).reshape((height, width, 4))
         # Convert to RGB color space for easier color detection
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
         # Define the range of red color in HSV
         lower_red = np.array([0, 150, 150])
         upper_red = np.array([10, 255, 255])
         mask = cv2.inRange(hsv, lower_red, upper_red)
-        
+        print("mask", mask)
         # Check if there are any red pixels in the image
         is_red = np.any(mask)
         number_pixels = np.sum(mask)
-        # Print some debug information
-        # print("Red detection:", is_red)
-        print("Number of red pixels:", number_pixels)
-        return is_red
+        print(f"Number of red pixels by {self.name}:", number_pixels)
+
+        lower_brown = np.array([10, 100, 20])
+        upper_brown = np.array([30, 255, 200])
+        brown_mask = cv2.inRange(hsv, lower_brown, upper_brown)
+        #detecting brown
+        is_brown = np.any(brown_mask)
+        number_brown_pixels = np.sum(brown_mask)
+        print(f"Number of brown pixels by {self.name}:", number_brown_pixels)
+        print("issss reddddddddddd:", is_red)
+        return is_red, is_brown
+    
     
     def cliff_detected(self):
-         for i in range(self.GROUND_SENSORS_NUMBER):
+         for i in range(3):
              if self.ground_sensors[i] and self.ground_sensors[i] < 100.0:
                  return True
          return False
     
     def wall_detected(self):
         # Check if any distance sensor reading indicates a wall
-        for i in range(self.DISTANCE_SENSORS_NUMBER):
+        for i in range(8):
             if self.distance_sensors_values[i] > 80.0:
                 return True  # Wall detected
         return False  # No wall detected
@@ -225,6 +308,7 @@ class PIDController:
 
         return v, output       
 
+global_pheromone_grid = {}
 class PheromoneAlgorithm():
 
     def __init__(self, robot) -> None:
@@ -235,7 +319,7 @@ class PheromoneAlgorithm():
         self.distances = {}
 
         self.pheromone_grids = {}
-        self.global_pheromone_grid = {}
+        
         self.robot_positions = {}
 
         self.evaporation_rate = 0.1
@@ -248,12 +332,17 @@ class PheromoneAlgorithm():
         self.start_position = self.get_robot_position()
         self.adjusted_left_speed = 0
         self.adjusted_right_speed = 0
+
+        #food collected
+        # self.global_food_collected = 0
+        self.global_food_collected = {'e1': 0, 'e2':0}
         
     def setController(self, controller):
         self.controller = controller
 
     def get_robot_position(self):
-        robot_node = robot.supervisor.getSelf()
+        robot_node = self.robot.supervisor.getSelf()
+        # robot_node = self.robot.supervisor.getFromDef()
         position = robot_node.getPosition()
         return position
     
@@ -289,8 +378,9 @@ class PheromoneAlgorithm():
         return self.robot_positions
 
     def deposit_pheromone(self, robot_name, robot_pos):
-        if self.controller.robot_state == RobotState.SEARCHING:
-            with open('pheromone_grid.txt', 'w') as file:
+        # if self.controller.robot_state == RobotState.SEARCHING:
+        if self.controller.robot_states[self.controller.robot_name] == RobotState.SEARCHING:
+            with open('global_pheromone_grid.txt', 'w') as file:
                 #coordinate of deposition
                 coordinate_key = self.getCoordinates()
                 
@@ -300,33 +390,38 @@ class PheromoneAlgorithm():
             
                 if robot_name not in self.pheromone_grids:
                     self.pheromone_grids[robot_name] = {}
-                    self.global_pheromone_grid[robot_name] = {}
+
+                if robot_name not in global_pheromone_grid:
+                    global_pheromone_grid[robot_name] = {}
 
                 #storing robots position
                 positions = self.storingPosition(robot_name, robot_pos)  
 
                 distance_moved = self.has_moved(robot_name, positions[robot_name]['previous_pos'], positions[robot_name]['current_pos'])
                 # print("has the robot moved to deposit:", distance_moved)
+                
                 if distance_moved:
+                    
                     #deposit pheromones 
-                    self.global_pheromone_grid[robot_name][current_time] = (self.exploration_intensity, positions[robot_name]['current_pos'])
+                    global_pheromone_grid[robot_name][current_time] = (self.exploration_intensity, positions[robot_name]['current_pos'])
+                    # print("global pheromone grid: ", global_pheromone_grid)
 
                     self.pheromone_grids[robot_name][current_time] = (self.exploration_intensity, positions[robot_name]['current_pos'])
 
-                    if (len(self.global_pheromone_grid[robot_name]) )%3 ==0:
-                        print("len", len(self.global_pheromone_grid[robot_name]))
+                    if (len(global_pheromone_grid[robot_name]) )%3 == 0:
+                        # print("len", len(self.global_pheromone_grid[robot_name]))
                         self.pheromone_grids[robot_name][current_time] = (self.higherIntensity, positions[robot_name]['current_pos'])
 
-                    print(f"GRID as of now: {current_time} ", self.pheromone_grids)
+                    # print(f"GRID as of now: {current_time} of {robot_name}", self.pheromone_grids)
                 else:
                     print("nothing deposited.")
             
-                # file.write("{}\n".format(self.pheromone_grids))
-                json.dump(self.pheromone_grids, file)
+                file.write("{}\n".format(global_pheromone_grid))
+                # json.dump(self.global_pheromone_grid, file)
             
             return self.pheromone_grids
         
-        elif self.controller.robot_state == RobotState.HOMING:
+        elif self.controller.robot_states[self.controller.robot_name] == RobotState.HOMING:
             
             current_time = controller.time["current_time"]
             # previous_time = controller.time["previous_time"]
@@ -334,16 +429,18 @@ class PheromoneAlgorithm():
         
             if robot_name not in self.pheromone_grids:
                 self.pheromone_grids[robot_name] = {}
-                self.global_pheromone_grid[robot_name] = {}
+
+            if robot_name not in global_pheromone_grid:
+                    global_pheromone_grid[robot_name] = {}
 
             #storing robots position
             home_positions = self.storingPosition(robot_name, robot_pos)  
 
             distance_moved = self.has_moved(robot_name, home_positions[robot_name]['previous_pos'], home_positions[robot_name]['current_pos'])
-            print("has the robot moved to deposit:", distance_moved)
+            print(f"has the robot {robot_name} moved to deposit:", distance_moved)
             if distance_moved:
                 #deposit pheromones 
-                self.global_pheromone_grid[robot_name][current_time] = (self.homing_intensity, home_positions[robot_name]['current_pos'])
+                global_pheromone_grid[robot_name][current_time] = (self.homing_intensity, home_positions[robot_name]['current_pos'])
 
                 self.pheromone_grids[robot_name][current_time] = (self.homing_intensity, home_positions[robot_name]['current_pos'])
 
@@ -351,7 +448,7 @@ class PheromoneAlgorithm():
                 #     print("len", len(self.global_pheromone_grid[robot_name]))
                 #     self.pheromone_grids[robot_name][current_time] = (self.higherIntensity, positions[robot_name]['current_pos'])
 
-                print(f"HOME GRID as of now: {current_time} ", self.pheromone_grids)
+                print(f"HOME GRID as of now: {current_time} for robot {robot_name} ", self.pheromone_grids)
             else:
                 print("nothing deposited.")
             
@@ -384,7 +481,7 @@ class PheromoneAlgorithm():
             self.current_key = key
             if self.robot_positions[robot_name]['current_pos'] == value[1] and controller.time["current_time"] == key :
                 self.current_sensed_pheromone = value[0]
-        print("current_sensed_pheromone", self.current_sensed_pheromone, "of the key: ", self.current_key)
+        print("current_sensed_pheromone", self.current_sensed_pheromone, "of the key: ", self.current_key, f"by the robot {robot_name}")
 
         neighbours = self.findNeighbours(robot_name,self.pheromone_grids, self.current_key, self.curent_value)
         neighbour_sensed_pheromone = {'current':[], 'front': [], 'back':[], 'left': [],'right':[]}
@@ -426,9 +523,11 @@ class PheromoneAlgorithm():
                                   (start_pos[1] - current_pos[1])**2)
         return distance_to_start
     
-    def adjust_robot_behavior(self, sensed_pheromone, robot_name):
+    def adjust_robot_behavior(self, sensed_pheromone, robot_name, robot_state):
+        print("State right now in adjusting", robot_state )
 
-        if self.controller.robot_state == RobotState.SEARCHING:
+        # if self.controller.robot_states[self.controller.robot_name] == RobotState.SEARCHING:
+        if robot_state == RobotState.SEARCHING:
             print("ADJSUTING ROBOT BEHAVIOUR>>>>>>>>>")
 
             # pid_controller  = PIDController(0.1,0.01,0.005)
@@ -472,8 +571,8 @@ class PheromoneAlgorithm():
             # print("adjusted speed: ", adjusted_left_speed, adjusted_right_speed)
             # return self.adjusted_left_speed, self.adjusted_right_speed
         
-        elif self.controller.robot_state == RobotState.HOMING:
-
+        elif robot_state == RobotState.HOMING:
+      
             current = self.robot_positions[robot_name]['current_pos']
             target = self.start_position
             # distance_to_start = self.distanceToHome(self.start_position, self.current_position)
@@ -511,6 +610,13 @@ class PheromoneAlgorithm():
                 print("Reached home. Stopping!")
                 self.adjusted_left_speed = 0.0
                 self.adjusted_right_speed = 0.0
+
+                #resetting the food counter 
+                self.global_food_collected[robot_name] += self.controller.food_counter
+                # self.global_food_collected += self.controller.food_counter
+                self.controller.food_counter = 0
+
+                print("global food collected", self.global_food_collected, self.controller.food_counter)
                 # sys.exit(0)
 
         return self.adjusted_left_speed, self.adjusted_right_speed
@@ -524,15 +630,41 @@ class PheromoneAlgorithm():
         decayed_intensity = original_intensity * decay_factor
         return decayed_intensity    
 
+# class Experiment():
+#     def __init__(self, robot, pheromone_algorithm=None) -> None:
+#         self.robot = robot
+#         self.pheromone_algorithm = pheromone_algorithm
+#         self.controller = None
+
+#     def setController(self, controller):
+#         self.controller = controller
+
+#     def food_collected(self):
+#         food_grabbed = self.controller.grabbing()
+#         food_counter = 0
+#         if food_grabbed:
+#             food_counter += 1 
+
+#         print("Food collected", food_counter)
+
+#     def time_taken():
+#         pass
+#     def energy_used():
+#         pass
+
 
 class Controller():
-    def __init__(self, robot, pheromone_algorithm=None) -> None:
+    def __init__(self, robot, pheromone_algorithm=None, name=None):
+        self.robot_name = name
         self.pheromone_algorithm = pheromone_algorithm
         self.robot = robot
 
         self.present_time = 0
         self.senses_food = False
-        self.robot_state = RobotState.SEARCHING
+        # self.robot_state = RobotState.SEARCHING
+        
+        self.robot_states = {}
+        self.initializeState()
 
         self.last_sensing_time = 0
         self.last_evp_time = 0
@@ -561,56 +693,68 @@ class Controller():
         self.sensed_target_direction = None
         self.max_intensity_key = ""
 
+        #food collected 
+        self.food_grabbed = False
+        # self.food_counter = 0
+        self.food_counter = {'e1':0, 'e2':0}
+        self.is_red, self.is_brown = None, None
 
-    def startPheromone(self, robot_names):
+    def startPheromone(self):
         # global last_sensing_time, last_evp_time, robot_pos
         #for two robot - sensing after 5-10 secs of start and continue that
         
-        for robot_name in robot_names:
-            if robot.supervisor.getName() == robot_name:
-                # print("here the robot posotion is geting recorded...")
-                self.robot_pos = self.pheromone_algorithm.get_robot_position()
-                self.current_position = self.robot_pos
+        if robot.supervisor.getName() == self.robot_name :
+            # print("here the robot posotion is geting recorded...")
+            self.robot_pos = self.pheromone_algorithm.get_robot_position()
+            self.current_position = self.robot_pos
 
-                #DEPOSITING
-                print("DEPOSITING")
-                self.pheromone_algorithm.deposit_pheromone(robot_name, self.robot_pos)
+            #DEPOSITING
+            print("DEPOSITING")
+            print("robot name coming here", self.robot_name)
+            self.pheromone_algorithm.deposit_pheromone(self.robot_name, self.robot_pos)
 
-                #SENSING
-                # elapsed_time_last_sensing = time["current_time"] - last_sensing_time
-                if self.present_time >= 5:
-                    print("sensing...")
-                    sensing = self.pheromone_algorithm.sense_pheromone(robot_name, self.robot_pos)
-                    new_left_speed, new_right_speed = self.pheromone_algorithm.adjust_robot_behavior(sensing, robot_name) 
-                    # self.pheromone_algorithm.adjust_robot_behavior(sensing, robot_name)                     
-                    robot.speeds[0] = new_left_speed
-                    robot.speeds[1] = new_right_speed
-                    robot.left_motor.setVelocity(robot.speeds[0])
-                    robot.right_motor.setVelocity(robot.speeds[1])
-                    # print("Left side speed: ", left_motor.getVelocity(), "right side speed: ", right_motor.getVelocity())
-                    self.last_sensing_time = self.time["current_time"]
+            #SENSING
+            # elapsed_time_last_sensing = time["current_time"] - last_sensing_time
+            if self.present_time >= 5:
+                print("sensing...")
+                sensing = self.pheromone_algorithm.sense_pheromone(self.robot_name, self.robot_pos)
+                new_left_speed, new_right_speed = self.pheromone_algorithm.adjust_robot_behavior(sensing, self.robot_name, self.robot_states[self.robot_name]) 
+                # self.pheromone_algorithm.adjust_robot_behavior(sensing, robot_name)                     
+                robot.speeds[0] = new_left_speed
+                robot.speeds[1] = new_right_speed
+                robot.left_motor.setVelocity(robot.speeds[0])
+                robot.right_motor.setVelocity(robot.speeds[1])
+                # print("Left side speed: ", left_motor.getVelocity(), "right side speed: ", right_motor.getVelocity())
+                self.last_sensing_time = self.time["current_time"]
 
         # #EVAPORATING               
         key_to_delete = []
-        for timestamp, (intensity, coord) in self.pheromone_algorithm.pheromone_grids[robot_name].items():
+        for timestamp, (intensity, coord) in self.pheromone_algorithm.pheromone_grids[self.robot_name].items():
             deposition_time  = timestamp
             elapsed_time = self.time["current_time"] - deposition_time
             # value = (intensity, coord)
             if 2.0 <= elapsed_time <= 4.0:
                 # print("evaporating...")   
-                evaporated_pheromone = self.pheromone_algorithm.evaporate_pheromone(robot_name, elapsed_time, intensity)
-                self.pheromone_algorithm.pheromone_grids[robot_name][timestamp] = (evaporated_pheromone, coord)
+                evaporated_pheromone = self.pheromone_algorithm.evaporate_pheromone(self.robot_name, elapsed_time, intensity)
+                self.pheromone_algorithm.pheromone_grids[self.robot_name][timestamp] = (evaporated_pheromone, coord)
                 if evaporated_pheromone <= 0.1:
                     key_to_delete.append(timestamp)
 
         for time in key_to_delete:
-            del self.pheromone_algorithm.pheromone_grids[robot_name][time]        
+            del self.pheromone_algorithm.pheromone_grids[self.robot_name][time]        
 
     def grabbing(self):
-        if robot.get_camera_input():
+        # self.is_red , _ = robot.get_camera_input()
+        print("is redddddddddddd", self.is_red)
+        if self.is_red:
             if 65000 < number_pixels < 517140: #66080
-                print("seeing food")
+                print(f"seeing food by {self.robot_name}")
                 self.senses_food = True
+                
+                #food counter
+                self.food_counter[self.robot_name] += 1 
+                print(f"Food collected by {self.robot_name}", self.food_counter)
+                self.food_grabbed = True
             else:
                 self.senses_food = False
         else:
@@ -624,60 +768,77 @@ class Controller():
                                   (start_pos[1] - current_pos[1])**2)
         return distance_to_start
 
-    def homing(self, robot_names):
-        for robot_name in robot_names:
-            if robot_name == robot.supervisor.getName() and self.robot_state == RobotState.HOMING:
+    def homing(self):
+        if self.robot_name == robot.supervisor.getName() and self.robot_states[self.robot_name]== RobotState.HOMING:
 
-                self.robot_pos = self.pheromone_algorithm.get_robot_position()
-                #deposit while homing... with different value 
-                print("deposit while homing...")
-                home_grid = self.pheromone_algorithm.deposit_pheromone(robot_name, self.robot_pos)
+            self.robot_pos = self.pheromone_algorithm.get_robot_position()
+            #deposit while homing... with different value 
+            print("deposit while homing...")
+            home_grid = self.pheromone_algorithm.deposit_pheromone(self.robot_name, self.robot_pos)
 
-                #sense the highest neighbour 
-                print("sensing home pheromones...")
-                home_sensing = self.pheromone_algorithm.sense_pheromone(robot_name, self.robot_pos)
+            #sense the highest neighbour 
+            print("sensing home pheromones...")
+            home_sensing = self.pheromone_algorithm.sense_pheromone(self.robot_name, self.robot_pos)
 
-                print("adjusting behaviour for homing")
-                new_left_speed, new_right_speed = self.pheromone_algorithm.adjust_robot_behavior(home_sensing, robot_name) 
-                robot.speeds[0] = new_left_speed
-                robot.speeds[1] = new_right_speed
-                robot.left_motor.setVelocity(robot.speeds[0])
-                robot.right_motor.setVelocity(robot.speeds[1])
-                # print("Left side speed: ", left_motor.getVelocity(), "right side speed: ", right_motor.getVelocity())
-                self.last_sensing_time = self.time["current_time"]
+            print("adjusting behaviour for homing")
+            new_left_speed, new_right_speed = self.pheromone_algorithm.adjust_robot_behavior(home_sensing, self.robot_name, self.robot_states[self.robot_name]) 
+            robot.speeds[0] = new_left_speed
+            robot.speeds[1] = new_right_speed
+            robot.left_motor.setVelocity(robot.speeds[0])
+            robot.right_motor.setVelocity(robot.speeds[1])
+            # print("Left side speed: ", left_motor.getVelocity(), "right side speed: ", right_motor.getVelocity())
+            self.last_sensing_time = self.time["current_time"]
 
         #EVAPORATING               
         key_to_delete = []
-        for timestamp, (intensity, coord) in home_grid[robot_name].items():
+        for timestamp, (intensity, coord) in home_grid[self.robot_name].items():
             deposition_time  = timestamp
             elapsed_time = self.time["current_time"] - deposition_time
             # value = (intensity, coord)
             if 2.0 <= elapsed_time <= 4.0:
                 # print("evaporating...")   
-                evaporated_pheromone = self.pheromone_algorithm.evaporate_pheromone(robot_name, elapsed_time, intensity)
-                home_grid[robot_name][timestamp] = (evaporated_pheromone, coord)
+                evaporated_pheromone = self.pheromone_algorithm.evaporate_pheromone(self.robot_name, elapsed_time, intensity)
+                home_grid[self.robot_name][timestamp] = (evaporated_pheromone, coord)
                 if evaporated_pheromone <= 0.1:
                     key_to_delete.append(timestamp)
 
         for time in key_to_delete:
-            del home_grid[robot_name][time]   
+            del home_grid[self.robot_name][time]  
                 
     def reachedHome(self,distance_to_start ):
-        
         if self.current_position == self.start_position or 0.05 <= round(distance_to_start,2) <= 0.06 : 
             return True 
         else:
             return False
-        
+    
+    def initializeState(self):
+        if self.robot_name not in self.robot_states:
+            self.robot_states[self.robot_name] = RobotState.SEARCHING
+        print("initliazed states:", self.robot_states)
+
+    # def updateRobotState(self):
+    #     if self.robot_state == RobotState.SEARCHING:
+    #         print("12345")
+    #         #in searching mode, grab food
+    #         # if self.grabbing():
+    #         if self.senses_food:
+    #             print("00000")
+    #             #once food is found chnage the state 
+    #             self.robot_state = RobotState.HOMING
+
     def updateRobotState(self):
-        if self.robot_state == RobotState.SEARCHING:
-            print("12345")
+        if self.robot_states[self.robot_name] == RobotState.SEARCHING:
+            print("-----12345------")
             #in searching mode, grab food
             if self.grabbing():
+            # if self.senses_food:
+                print("---------00000----------")
                 #once food is found chnage the state 
-                self.robot_state = RobotState.HOMING
+                self.robot_states[self.robot_name] = RobotState.HOMING
+        
     
-    def mappingTrajectory(self, robot_names):   
+    
+    def mappingTrajectory(self):   
         #plotting graph 
         current_position = self.pheromone_algorithm.get_robot_position()
         self.x_trajectory.append( current_position[0] )
@@ -694,69 +855,109 @@ class Controller():
         self.displayA.imagePaste(image, 0,0, False)
         self.displayA.imageDelete(image)
     
-    def mappingConcentration(self, robot_names):   
+    def mappingConcentration(self):   
         with open('heatmap.txt', 'w') as file:
             self.current_positions_list.append(self.pheromone_algorithm.get_robot_position())
             file.write("{}\n".format(self.current_positions_list))
             file.flush()
 
+    def main(self): 
+        # while robot.supervisor.step(robot.timestep) != -1:
+        robot.reset_actuator_values()
+        robot.get_sensor_input()
+        robot.blink_leds()
+        
+        self.present_time = robot.supervisor.getTime()
+        # self.mappingTrajectory(robot_names)
+        # self.mappingConcentration(robot_names)
+        
+        #to record  the time when each robot starts moving 
+        self.time['previous_time'] = self.time['current_time']  # Shift previous to old
+        self.time['current_time'] = self.present_time # Update current
+        # print("TIME: ", time)
+        
+        #random movement of the robot (kind of avoids obstacles)
+        for i in range(2):
+            robot.speeds[i] = 0.0
+            for j in range(8):
+                robot.speeds[i] += robot.coefficients[j][i] * (1.0 - (robot.distance_sensors_values[j]/ (1024/2)))
 
-    def main(self):  
-        while robot.supervisor.step(robot.timestep) != -1:
-            robot.reset_actuator_values()
-            robot.get_sensor_input()
-            robot.blink_leds()
-            robot_names = ['e1', 'e2']
-
-            self.present_time = robot.supervisor.getTime()
-            self.mappingTrajectory(robot_names)
-            self.mappingConcentration(robot_names)
-            
-
-            #to record  the time when each robot starts moving 
-            self.time['previous_time'] = self.time['current_time']  # Shift previous to old
-            self.time['current_time'] = self.present_time # Update current
-            # print("TIME: ", time)
-
-            #random movement of the robot (kind of avoids obstacles)
-            for i in range(2):
-                robot.speeds[i] = 0.0
-                for j in range(8):
-                    robot.speeds[i] += robot.coefficients[j][i] * (1.0 - (robot.distance_sensors_values[j]/ (1024/2)))
-
-            # print("main loop robot state: ", self.robot_state)
-            self.updateRobotState()
-            
-            
-            if self.robot_state == RobotState.SEARCHING:  
-                if self.present_time >= 5:
-                    print("started pheromone")
-                    #pheromone algorithm works after 5 secs of scattering
-                    self.startPheromone(robot_names)
-                else:
-                    #random walk for less than 5 secs 
-                    # if wall_detected() or cliff_detected():
-                    # print("wall in front")
+        # print("main loop robot state: ", self.robot_state)
+        self.updateRobotState()
+        
+        self.is_red, self.is_brown = robot.get_camera_input()
+        
+        if self.robot_states[self.robot_name] == RobotState.SEARCHING:  
+            if self.present_time >= 5:
+                print("started pheromone")
+                #pheromone algorithm works after 5 secs of scattering
+                # self.startPheromone(robot_names)
+                self.startPheromone()
+            else:
+                #random walk for less than 5 secs 
+                # if wall_detected() or cliff_detected():
+                # print("wall in front")
+                # print("started random")
+                # left_speed = robot.speeds[0]
+                # right_speed = robot.speeds[1]
+                # robot.left_motor.setVelocity(left_speed)
+                # robot.right_motor.setVelocity(right_speed)
+                
+                print("is brown found", self.is_brown)
+                if self.is_brown:
+                    # if 460785 < number_brown_pixels < 517140:
+                    #         robot.left_motor.setVelocity(0.0)
+                    #         robot.right_motor.setVelocity(0.0)
+                    #         sys.exit(0)
                     print("started random")
                     left_speed = robot.speeds[0]
                     right_speed = robot.speeds[1]
                     robot.left_motor.setVelocity(left_speed)
                     robot.right_motor.setVelocity(right_speed)
-                self.grabbing()
-            
-            elif self.robot_state == RobotState.HOMING:
-                print("going home")   
-                # self.homing(robot_names)
-                self.homing(robot_names)
-                
+                else:
+                    print("started random")
+                    left_speed = robot.speeds[0]
+                    right_speed = robot.speeds[1]
+                    robot.left_motor.setVelocity(left_speed)
+                    robot.right_motor.setVelocity(right_speed)
 
-            robot.set_actuators()
-            robot.step()
+            self.grabbing()
+            
+        
+        elif self.robot_states[self.robot_name] == RobotState.HOMING:
+            print("State right now", self.robot_states[self.robot_name] )
+            print("going home")   
+            # self.homing(robot_names)
+            self.homing()
+            
+
+        robot.set_actuators()
+        robot.step()
 
 
 if __name__ == "__main__":
-    robot = InitializeRobot()    
-    pheromone = PheromoneAlgorithm(robot)
-    controller = Controller(robot, pheromone)
-    pheromone.setController(controller )
-    controller.main()
+    supervisor = Supervisor()
+    robot_names = ['e1', 'e2']
+    controllers = []
+
+    for robot_name in robot_names:
+        if supervisor.getName() == robot_name:
+            print("Robot name: ", robot_name)
+
+            robot = InitializeRobot(name=robot_name, supervisor=supervisor)
+            pheromone = PheromoneAlgorithm(robot)
+            controller = Controller(robot, pheromone, robot_name)
+            pheromone.setController(controller)
+            controllers.append(Controller(robot, pheromone, robot_name)) 
+    print(controllers)
+    # robot = InitializeRobot()    
+    # pheromone = PheromoneAlgorithm(robot)
+    # controller = Controller(robot, pheromone)
+    # # experiment = Experiment(robot, pheromone)
+    # # experiment.setController(controller)
+    # pheromone.setController(controller )
+    # controller.main()
+
+    while supervisor.step(robot.timestep) != -1:
+        for controller in controllers:
+            controller.main()

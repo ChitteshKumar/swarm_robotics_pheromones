@@ -1,4 +1,4 @@
-"""food_detection_avoid_obstacles controller."""
+"""pheromone_algo controller."""
 import numpy as np
 from controller import Robot, Motor, DistanceSensor, LED, Node, Camera, Emitter, Receiver, Supervisor
 import sys

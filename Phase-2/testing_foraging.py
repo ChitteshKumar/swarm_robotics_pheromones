@@ -1,6 +1,7 @@
 """food_detection_avoid_obstacles controller."""
 import numpy as np
-from controller import Robot, Motor, DistanceSensor, LED, Node, Camera, Emitter, Receiver, Supervisor
+# from controller import Robot, Motor, DistanceSensor, LED, Node, Camera, Emitter, Receiver, Supervisor
+from controller import Node, Supervisor
 import sys
 import cv2  # OpenCV for image processing
 import math
@@ -172,8 +173,9 @@ if __name__ == "__main__":
         # Check if there are any red pixels in the image
         is_red = np.any(mask)
         number_pixels = np.sum(mask)
+
         # Print some debug information
-        print("Red detection:", is_red)
+        # print("Red detection:", is_red)
         print("Number of red pixels:", number_pixels)
         return is_red
     
@@ -190,7 +192,6 @@ if __name__ == "__main__":
             senses_food = False
 
         print("FOOD GRABBED", senses_food)
-        # print("done,homing")
         return senses_food
     
     def get_robot_position():
@@ -198,33 +199,6 @@ if __name__ == "__main__":
         position = robot_node.getPosition()
         return position
     
-    # start_position = get_robot_position()  #start [0.0, -0.25, 0.0]
-    # def homing():
-    #     print("start", start_position)
-    #     current_position = get_robot_position()
-    #     print("current position: ", current_position)
-    #     homing_vector = [start_position[i] - current_position[i] for i in range(2)]
-    #     print(" homing vector: ", homing_vector)
-
-    #     #robots direction - direction of the vector from the current position to the target relative to the coordinate system,
-    #     angle_to_start = math.atan2(homing_vector[1], homing_vector[0])
-    #     print("angle to start(type dont know): ", angle_to_start)
-
-    #     # if current_position == start_position:
-    #     #     print("stopping")
-    #     #     left_speed = 0
-    #     #     right_speed = 0
-    #     #     left_motor.setVelocity(left_speed)
-    #     #     right_motor.setVelocity(right_speed)
-    #     # else:
-    #     if angle_to_start > 0:
-    #         print('tunrning left')
-    #         turn_left()
-    #     else:
-    #         print('tunrning right')
-    #         turn_right()
-    #     go_forward()
-
     start_position = get_robot_position()  #start [0.0, -0.25, 0.0]
 
     def distanceToHome(current_position):
@@ -246,7 +220,8 @@ if __name__ == "__main__":
         angle_to_start = math.atan2(homing_vector[1], homing_vector[0])
         # print("angle to start(type dont know): ", round(angle_to_start,2))
 
-        if 0.05 <= round(distance_to_start,2) <= 0.06:  #values kept just by testing, adjust this threshold based on accuracy
+        #values kept just by testing, adjust this threshold based on accuracy
+        if 0.05 <= round(distance_to_start,2) <= 0.06:  
             print("Reached home. Stopping!")
             left_motor.setVelocity(0.0)
             right_motor.setVelocity(0.0)
@@ -254,16 +229,8 @@ if __name__ == "__main__":
         else:
             print("Not yet at home.")
             if round(angle_to_start,2) > 0.1:
-                # total_turn = 0.5*angle_to_start
-                # print(">0.1 turn: ", total_turn)
-                # left_motor.setVelocity(MAX_SPEED - total_turn)
-                # right_motor.setVelocity(MAX_SPEED + total_turn)
                 turn_left()
             else:         
-                # total_turn = 0.5* -angle_to_start
-                # print("<0.1 turn: ", total_turn)
-                # left_motor.setVelocity(MAX_SPEED + total_turn)
-                # right_motor.setVelocity(MAX_SPEED - total_turn)
                 turn_right()
             go_forward()
     
@@ -295,38 +262,12 @@ if __name__ == "__main__":
         get_sensor_input()
         blink_leds()
 
-        # #random movement of the robot (kind of avoids obstacles)
-        # for i in range(2):
-        #     speeds[i] = 0.0
-        #     for j in range(8):
-        #         speeds[i] += coefficients[j][i] * (1.0 - (distance_sensors_values[j]/ (1024/2)))
-        
-    
-        # if wall_detected() or cliff_detected():
-        #     print("walll in frint")
-        #     left_speed = speeds[0]
-        #     right_speed = speeds[1]
-        #     # print("Left side speed: ", left_motor.getVelocity(), "right side speed: ", right_motor.getVelocity())
-        
-        # if not senses_food:
-        #     curren_position = get_robot_position()
-        #     robot_pos_list.append(curren_position)
-        #     # print(robot_pos_list)
-        
-        # senses_food = grabbing()
-
-        # if senses_food:
-        #     print("i am here")
-        #     homing()
-        #     # left_speed = 0
-        #     # right_speed = 0
-        #     # sys.exit(0)
-
         #random movement of the robot (kind of avoids obstacles)
         for i in range(2):
             speeds[i] = 0.0
             for j in range(8):
                 speeds[i] += coefficients[j][i] * (1.0 - (distance_sensors_values[j]/ (1024/2)))
+        print("speeds: ",speeds)
         
         print("main loop robot state: ", robot_state)
         updateRobotState()
@@ -338,13 +279,14 @@ if __name__ == "__main__":
                 left_motor.setVelocity(left_speed)
                 right_motor.setVelocity(right_speed)
                 # print("Left side speed: ", left_motor.getVelocity(), "right side speed: ", right_motor.getVelocity())
-            
             grabbing()
         
         elif robot_state == RobotState.HOMING:
             print("going home")   
             homing()
 
-        
         set_actuators()
         step()
+
+
+        

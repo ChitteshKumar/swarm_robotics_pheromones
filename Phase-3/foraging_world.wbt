@@ -9,8 +9,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.30709907873892667 0.4176390171553549 -0.8551419807185306 1.4203911744763742
-  position -0.6001043755973198 1.7321139999670523 1.2697169077865598
+  orientation 0.22159529358177024 0.6694326271283897 -0.7090525252746736 0.8735294923312705
+  position -1.8353630557191636 1.4499197993318584 1.3047005329425747
 }
 TexturedBackground {
 }
@@ -23,10 +23,11 @@ RectangleArena {
   }
 }
 E-puck {
-  translation -0.656908 -0.0240011 -0.000103086
+  translation -0.871912 0.660021 0.000253209
   rotation 0.0002015289873816967 -0.0002908809817871141 0.9999999373871588 1.73539
   name "e1"
-  controller "robot_foraging"
+  controller "random_foraging"
+  supervisor TRUE
 }
 Solid {
   translation 0 -0.59 0.05
@@ -44,14 +45,16 @@ Solid {
   ]
 }
 E-puck {
-  translation 0.384064 0.211952 0.16
+  translation -0.732008 0.873999 0.000690666
   rotation 0.00026770611930187647 0.0008031726704291242 -0.9999996416234833 0.6434527722520732
   name "e2"
-  controller "robot_foraging"
+  controller "random_foraging"
+  supervisor TRUE
 }
 E-puck {
-  translation -0.263474 0.763837 -8.94652e-05
+  translation -0.627151 0.716588 -0.00015365
   rotation -9.724304569523941e-05 1.5806422161211415e-05 0.9999999951469736 2.8193331894727196
   name "e3"
-  controller "robot_foraging"
+  controller "random_foraging"
+  supervisor TRUE
 }
