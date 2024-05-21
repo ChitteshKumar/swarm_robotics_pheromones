@@ -1,7 +1,7 @@
 # swarm_robotics_pheromones
 <!--Final Year Project on swarm robot simulation based on Pheromone Algorithm.-->
 
-Hello! I'm Chittesh, a passionate Bachelor of Science student at the University of Manchester, focusing on Science and Engineering. My academic journey has fueled my interest in the fascinating world of robotics and algorithms.
+Hello! I'm Chittesh, a passionate Bachelor of Science student at the University of Manchester, focusing on Science and Engineering. My academic journey has fueled my interest in the fascinating world of robotics and algorithms. This project is licensed under the terms of the MIT license.
 
 ## About Me
 
